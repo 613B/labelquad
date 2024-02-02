@@ -103,6 +103,7 @@ class Shape(object):
             "polygon",
             "rectangle",
             "point",
+            "quad",
             "line",
             "circle",
             "linestrip",
@@ -123,7 +124,7 @@ class Shape(object):
             self.point_labels.append(label)
 
     def canAddPoint(self):
-        return self.shape_type in ["polygon", "linestrip"]
+        return self.shape_type in ["polygon", "linestrip", "quad"]
 
     def popPoint(self):
         if self.points:

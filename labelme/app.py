@@ -352,6 +352,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Start drawing points"),
             enabled=False,
         )
+        createQuadMode = action(
+            self.tr("Create Quad"),
+            lambda: self.toggleDrawMode(False, createMode="quad"),
+            shortcuts["create_quad"],
+            "objects",
+            self.tr("Start drawing quads"),
+            enabled=False,
+        )
         createLineStripMode = action(
             self.tr("Create LineStrip"),
             lambda: self.toggleDrawMode(False, createMode="linestrip"),
@@ -640,6 +648,7 @@ class MainWindow(QtWidgets.QMainWindow):
             createCircleMode=createCircleMode,
             createLineMode=createLineMode,
             createPointMode=createPointMode,
+            createQuadMode=createQuadMode,
             createLineStripMode=createLineStripMode,
             createAiPolygonMode=createAiPolygonMode,
             createAiMaskMode=createAiMaskMode,
@@ -678,6 +687,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 createCircleMode,
                 createLineMode,
                 createPointMode,
+                createQuadMode,
                 createLineStripMode,
                 createAiPolygonMode,
                 createAiMaskMode,
@@ -698,6 +708,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 createCircleMode,
                 createLineMode,
                 createPointMode,
+                createQuadMode,
                 createLineStripMode,
                 createAiPolygonMode,
                 createAiMaskMode,
@@ -926,6 +937,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.actions.createCircleMode,
             self.actions.createLineMode,
             self.actions.createPointMode,
+            self.actions.createQuadMode,
             self.actions.createLineStripMode,
             self.actions.createAiPolygonMode,
             self.actions.createAiMaskMode,
@@ -959,6 +971,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.createCircleMode.setEnabled(True)
         self.actions.createLineMode.setEnabled(True)
         self.actions.createPointMode.setEnabled(True)
+        self.actions.createQuadMode.setEnabled(True)
         self.actions.createLineStripMode.setEnabled(True)
         self.actions.createAiPolygonMode.setEnabled(True)
         self.actions.createAiMaskMode.setEnabled(True)
@@ -1035,6 +1048,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "rectangle": self.actions.createRectangleMode,
             "circle": self.actions.createCircleMode,
             "point": self.actions.createPointMode,
+            "quad": self.actions.createQuadMode,
             "line": self.actions.createLineMode,
             "linestrip": self.actions.createLineStripMode,
             "ai_polygon": self.actions.createAiPolygonMode,

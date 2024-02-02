@@ -78,6 +78,7 @@ canvas:
     circle: false
     line: false
     point: false
+    quad: false
     linestrip: false
     ai_polygon: false
     ai_mask: false
@@ -106,6 +107,7 @@ shortcuts:
   create_circle: null
   create_line: null
   create_point: null
+  create_quad: null
   create_linestrip: null
   edit_polygon: Ctrl+J
   delete_polygon: Delete

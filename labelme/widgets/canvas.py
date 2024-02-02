@@ -33,8 +33,8 @@ class Canvas(QtWidgets.QWidget):
 
     CREATE, EDIT = 0, 1
 
-    # polygon, rectangle, line, or point
-    _createMode = "polygon"
+    # polygon, rectangle, line, quad, or point
+    _createMode = "quad"
 
     _fill_drawing = False
 
@@ -54,6 +54,7 @@ class Canvas(QtWidgets.QWidget):
                 "circle": False,
                 "line": False,
                 "point": False,
+                "quad": False,
                 "linestrip": False,
                 "ai_polygon": False,
                 "ai_mask": False,
@@ -72,6 +73,7 @@ class Canvas(QtWidgets.QWidget):
         #   - createMode == 'rectangle': diagonal line of the rectangle
         #   - createMode == 'line': the line
         #   - createMode == 'point': the point
+        #   - createMode == 'quad': the quad
         self.line = Shape()
         self.prevPoint = QtCore.QPoint()
         self.prevMovePoint = QtCore.QPoint()
@@ -101,6 +103,7 @@ class Canvas(QtWidgets.QWidget):
         self.setFocusPolicy(QtCore.Qt.WheelFocus)
 
         self._ai_model = None
+        self._quad_is_closed = False
 
     def fillDrawing(self):
         return self._fill_drawing
@@ -120,6 +123,7 @@ class Canvas(QtWidgets.QWidget):
             "circle",
             "line",
             "point",
+            "quad",
             "linestrip",
             "ai_polygon",
             "ai_mask",
@@ -266,7 +270,19 @@ class Canvas(QtWidgets.QWidget):
                 pos = self.current[0]
                 self.overrideCursor(CURSOR_POINT)
                 self.current.highlightVertex(0, Shape.NEAR_VERTEX)
-            if self.createMode in ["polygon", "linestrip"]:
+            elif (
+                self.snapping
+                and len(self.current) > 3
+                and self.createMode == "quad"
+                and self.closeEnough(pos, self.current[0])
+            ):
+                # Attract line to starting point and
+                # colorise to alert the user.
+                pos = self.current[0]
+                self.overrideCursor(CURSOR_POINT)
+                self.current.highlightVertex(0, Shape.NEAR_VERTEX)
+                self._quad_is_closed = True
+            if self.createMode in ["polygon", "linestrip", "quad"]:
                 self.line.points = [self.current[-1], pos]
                 self.line.point_labels = [1, 1]
             elif self.createMode in ["ai_polygon", "ai_mask"]:
@@ -424,6 +440,13 @@ class Canvas(QtWidgets.QWidget):
                         self.line[0] = self.current[-1]
                         if int(ev.modifiers()) == QtCore.Qt.ControlModifier:
                             self.finalise()
+                    if self.createMode == "quad":
+                        if len(self.current.points) < 4 or self._quad_is_closed:
+                            self.current.addPoint(self.line[1])
+                            self.line[0] = self.current[-1]
+                            if self.current.isClosed():
+                                self.finalise()
+                            self._quad_is_closed = False
                     elif self.createMode in ["ai_polygon", "ai_mask"]:
                         self.current.addPoint(
                             self.line.points[1],
@@ -725,7 +748,7 @@ class Canvas(QtWidgets.QWidget):
 
         if (
             self.fillDrawing()
-            and self.createMode == "polygon"
+            and (self.createMode == "polygon" or self.createMode == "quad")
             and self.current is not None
             and len(self.current.points) >= 2
         ):
