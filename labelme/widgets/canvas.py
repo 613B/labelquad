@@ -1007,6 +1007,12 @@ class Canvas(QtWidgets.QWidget):
         self.shapesBackups.pop()
         self.storeShapes()
         return self.shapes[-1]
+    
+    def getPreviousShape(self):
+        if len(self.shapes) > 1:
+            return self.shapes[-2]
+        else:
+            return None  
 
     def undoLastLine(self):
         assert self.shapes

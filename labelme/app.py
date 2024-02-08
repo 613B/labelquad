@@ -312,6 +312,16 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         toggle_keep_prev_mode.setChecked(self._config["keep_prev"])
 
+        toggle_omit_label_assign_mode = action(
+            self.tr("Omit Label Assignment"),
+            self.toggleOmitLabelAssignMode,
+            None,
+            None,
+            self.tr('Toggle "omit label assign" mode'),
+            checkable=True,
+        )
+        toggle_omit_label_assign_mode.setChecked(self._config["omit_label_assign"])
+        
         createMode = action(
             self.tr("Create Polygons"),
             lambda: self.toggleDrawMode(False, createMode="polygon"),
@@ -634,6 +644,7 @@ class MainWindow(QtWidgets.QMainWindow):
             close=close,
             deleteFile=deleteFile,
             toggleKeepPrevMode=toggle_keep_prev_mode,
+            toggleOmitLabelAssignMode=toggle_omit_label_assign_mode,
             delete=delete,
             edit=edit,
             duplicate=duplicate,
@@ -679,6 +690,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 removePoint,
                 None,
                 toggle_keep_prev_mode,
+                toggle_omit_label_assign_mode,
             ),
             # menu shown at right click
             menu=(
@@ -1401,6 +1413,7 @@ class MainWindow(QtWidgets.QMainWindow):
         position MUST be in global coordinates.
         """
         items = self.uniqLabelList.selectedItems()
+        previous_shape = self.canvas.getPreviousShape()
         text = None
         if items:
             text = items[0].data(Qt.UserRole)
@@ -1408,10 +1421,16 @@ class MainWindow(QtWidgets.QMainWindow):
         group_id = None
         description = ""
         if self._config["display_label_popup"] or not text:
-            previous_text = self.labelDialog.edit.text()
-            text, flags, group_id, description = self.labelDialog.popUp(text)
-            if not text:
-                self.labelDialog.edit.setText(previous_text)
+            if self._config["omit_label_assign"] and previous_shape:
+                text = previous_shape.label
+                flags = previous_shape.flags
+                group_id = previous_shape.group_id
+                description = previous_shape.description
+            else:
+                previous_text = self.labelDialog.edit.text()
+                text, flags, group_id, description = self.labelDialog.popUp(text)
+                if not text:
+                    self.labelDialog.edit.setText(previous_text)
 
         if text and not self.validateLabel(text):
             self.errorMessage(
@@ -1980,6 +1999,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def toggleKeepPrevMode(self):
         self._config["keep_prev"] = not self._config["keep_prev"]
+
+    def toggleOmitLabelAssignMode(self):
+        self._config["omit_label_assign"] = not self._config["omit_label_assign"]
 
     def removeSelectedPoint(self):
         self.canvas.removeSelectedPoint()
