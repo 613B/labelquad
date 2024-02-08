@@ -182,6 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.shapeMoved.connect(self.setDirty)
         self.canvas.selectionChanged.connect(self.shapeSelectionChanged)
         self.canvas.drawingPolygon.connect(self.toggleDrawingSensitive)
+        self.canvas.rotateLabel.connect(self.rotateLabel)
 
         self.setCentralWidget(scrollArea)
 
@@ -1453,6 +1454,28 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.canvas.undoLastLine()
             self.canvas.shapesBackups.pop()
+
+    def rotateLabel(self):
+        labels = self.uniqLabelList.getLabels()
+        if len(labels) > 1:
+            shape = self.canvas.hShape
+            item = self.labelList.findItemByShape(shape)
+            current_label = shape.label
+            current_index = labels.index(current_label)
+            next_index = (current_index + 1) % len(labels)
+            shape.label = labels[next_index]
+            self._update_shape_color(shape)
+            if shape.group_id is None:
+                item.setText(
+                    '{} <font color="#{:02x}{:02x}{:02x}">●</font>'.format(
+                        html.escape(shape.label), *shape.fill_color.getRgb()[:3]
+                    )
+                )
+            else:
+                item.setText("{} ({})".format(shape.label, shape.group_id))
+            self.actions.undoLastPoint.setEnabled(False)
+            self.actions.undo.setEnabled(True)
+            self.setDirty()
 
     def scrollRequest(self, delta, orientation):
         units = -delta * 0.1  # natural scroll

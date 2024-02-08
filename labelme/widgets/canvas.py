@@ -30,6 +30,7 @@ class Canvas(QtWidgets.QWidget):
     shapeMoved = QtCore.Signal()
     drawingPolygon = QtCore.Signal(bool)
     vertexSelected = QtCore.Signal(bool)
+    rotateLabel = QtCore.Signal()
 
     CREATE, EDIT = 0, 1
 
@@ -573,6 +574,15 @@ class Canvas(QtWidgets.QWidget):
             self.createMode == "polygon" and self.canCloseShape()
         ) or self.createMode in ["ai_polygon", "ai_mask"]:
             self.finalise()
+        
+        if self.editing():
+            if (
+                self.hShape is not None
+                # and self.hShapeIsSelected
+                # and not self.movingShape
+            ):
+                self.rotateLabel.emit()
+                self.storeShapes()
 
     def selectShapes(self, shapes):
         self.setHiding()

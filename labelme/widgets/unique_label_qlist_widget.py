@@ -43,3 +43,9 @@ class UniqueLabelQListWidget(EscapableQListWidget):
         item.setSizeHint(qlabel.sizeHint())
 
         self.setItemWidget(item, qlabel)
+
+    def getLabels(self):
+        labels = []
+        for index in range(self.count()):
+            labels.append(self.item(index).data(Qt.UserRole))
+        return labels
