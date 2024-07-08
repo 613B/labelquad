@@ -339,14 +339,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Delete the selected polygons"),
             enabled=False,
         )
-        duplicate = action(
-            self.tr("Duplicate Polygons"),
-            self.duplicateSelectedShape,
-            shortcuts["duplicate_polygon"],
-            "copy",
-            self.tr("Create a duplicate of the selected polygons"),
-            enabled=False,
-        )
         copy = action(
             self.tr("Copy Polygons"),
             self.copySelectedShape,
@@ -560,7 +552,6 @@ class MainWindow(QtWidgets.QMainWindow):
             toggleKeepPrevMode=toggle_keep_prev_mode,
             delete=delete,
             edit=edit,
-            duplicate=duplicate,
             copy=copy,
             paste=paste,
             undoLastPoint=undoLastPoint,
@@ -584,7 +575,6 @@ class MainWindow(QtWidgets.QMainWindow):
             # XXX: need to add some actions here to activate the shortcut
             editMenu=(
                 edit,
-                duplicate,
                 copy,
                 paste,
                 delete,
@@ -601,7 +591,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 createMode,
                 editMode,
                 edit,
-                duplicate,
                 copy,
                 paste,
                 delete,
@@ -698,7 +687,6 @@ class MainWindow(QtWidgets.QMainWindow):
             None,
             createMode,
             editMode,
-            duplicate,
             delete,
             undo,
             brightnessContrast,
@@ -1091,7 +1079,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._noSelectionSlot = False
         n_selected = len(selected_shapes)
         self.actions.delete.setEnabled(n_selected)
-        self.actions.duplicate.setEnabled(n_selected)
         self.actions.copy.setEnabled(n_selected)
         self.actions.edit.setEnabled(n_selected)
 
@@ -1264,12 +1251,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.tr("Error saving label data"), self.tr("<b>%s</b>") % e
             )
             return False
-
-    def duplicateSelectedShape(self):
-        added_shapes = self.canvas.duplicateSelectedShapes()
-        for shape in added_shapes:
-            self.addLabel(shape)
-        self.setDirty()
 
     def pasteSelectedShape(self):
         self.loadShapes(self._copied_shapes, replace=False)
