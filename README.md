@@ -59,9 +59,9 @@ It is written in Python and uses Qt for its graphical interface.
 
 If you're new to Labelme, you can get started with [Labelme Starter Guide](https://labelme.gumroad.com/l/starter-guide) (FREE), which contains:
 
-- **Installation guides** for all platforms: Windows, macOS, and Linux ?’»
-- **Step-by-step tutorials**: first annotation to editing, exporting, and integrating with other programs ?“•
-- **A compilation of valuable resources** for further exploration ?”—.
+- **Installation guides** for all platforms: Windows, macOS, and Linux ?ï¿½ï¿½
+- **Step-by-step tutorials**: first annotation to editing, exporting, and integrating with other programs ?ï¿½ï¿½
+- **A compilation of valuable resources** for further exploration ?ï¿½ï¿½.
 
 
 ## Installation
@@ -72,20 +72,11 @@ There are options:
 - Platform specific installation: [Ubuntu](#ubuntu), [macOS](#macos), [Windows](#windows)
 - Pre-build binaries from [the release section](https://github.com/wkentaro/labelme/releases)
 
-### Anaconda
-
-You need install [Anaconda](https://www.continuum.io/downloads), then run below:
 
 ```bash
-# python3
-conda create --name=labelme python=3
-source activate labelme
-# conda install -c conda-forge pyside2
-# conda install pyqt
-# pip install pyqt5  # pyqt5 can be installed via pip on python3
-pip install labelme
-# or you can install everything by conda command
-# conda install labelme -c conda-forge
+py -3.10 -m venv .venv
+.venv\Scripts\activate
+pip install -e requirements-dev.txt
 ```
 
 ### Ubuntu
