@@ -322,22 +322,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Start drawing polygons"),
             enabled=False,
         )
-        createLineMode = action(
-            self.tr("Create Line"),
-            lambda: self.toggleDrawMode(False, createMode="line"),
-            shortcuts["create_line"],
-            "objects",
-            self.tr("Start drawing lines"),
-            enabled=False,
-        )
-        createLineStripMode = action(
-            self.tr("Create LineStrip"),
-            lambda: self.toggleDrawMode(False, createMode="linestrip"),
-            shortcuts["create_linestrip"],
-            "objects",
-            self.tr("Start drawing linestrip. Ctrl+LeftClick ends creation."),
-            enabled=False,
-        )
         editMode = action(
             self.tr("Edit Polygons"),
             self.setEditMode,
@@ -584,8 +568,6 @@ class MainWindow(QtWidgets.QMainWindow):
             removePoint=removePoint,
             createMode=createMode,
             editMode=editMode,
-            createLineMode=createLineMode,
-            createLineStripMode=createLineStripMode,
             zoom=zoom,
             zoomIn=zoomIn,
             zoomOut=zoomOut,
@@ -617,8 +599,6 @@ class MainWindow(QtWidgets.QMainWindow):
             # menu shown at right click
             menu=(
                 createMode,
-                createLineMode,
-                createLineStripMode,
                 editMode,
                 edit,
                 duplicate,
@@ -632,8 +612,6 @@ class MainWindow(QtWidgets.QMainWindow):
             onLoadActive=(
                 close,
                 createMode,
-                createLineMode,
-                createLineStripMode,
                 editMode,
                 brightnessContrast,
             ),
@@ -825,8 +803,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menus.edit.clear()
         actions = (
             self.actions.createMode,
-            self.actions.createLineMode,
-            self.actions.createLineStripMode,
             self.actions.editMode,
         )
         utils.addActions(self.menus.edit, actions + self.actions.editMenu)
@@ -853,8 +829,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dirty = False
         self.actions.save.setEnabled(False)
         self.actions.createMode.setEnabled(True)
-        self.actions.createLineMode.setEnabled(True)
-        self.actions.createLineStripMode.setEnabled(True)
         title = __appname__
         if self.filename is not None:
             title = "{} - {}".format(title, self.filename)
@@ -925,8 +899,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggleDrawMode(self, edit=True, createMode="polygon"):
         draw_actions = {
             "polygon": self.actions.createMode,
-            "line": self.actions.createLineMode,
-            "linestrip": self.actions.createLineStripMode,
         }
 
         self.canvas.setEditing(edit)
