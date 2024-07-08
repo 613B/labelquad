@@ -10,6 +10,7 @@ import webbrowser
 
 import imgviz
 import natsort
+import numpy as np
 from qtpy import QtCore
 from qtpy import QtGui
 from qtpy import QtWidgets
@@ -17,6 +18,7 @@ from qtpy.QtCore import Qt
 
 from labelme import PY2
 from labelme import __appname__
+from labelme import utils
 from labelme.ai import MODELS
 from labelme.config import get_config
 from labelme.label_file import LabelFile
@@ -33,7 +35,6 @@ from labelme.widgets import ToolBar
 from labelme.widgets import UniqueLabelQListWidget
 from labelme.widgets import ZoomWidget
 
-from . import utils
 
 # FIXME
 # - [medium] Set max zoom value to something big enough for FitWidth/Window
@@ -119,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flag_widget.itemChanged.connect(self.setDirty)
 
         self.labelList.itemSelectionChanged.connect(self.labelSelectionChanged)
-        self.labelList.itemDoubleClicked.connect(self.editLabel)
+        self.labelList.itemDoubleClicked.connect(self._edit_label)
         self.labelList.itemChanged.connect(self.labelItemChanged)
         self.labelList.itemDropped.connect(self.labelOrderChanged)
         self.shape_dock = QtWidgets.QDockWidget(self.tr("Polygon Labels"), self)
@@ -168,6 +169,9 @@ class MainWindow(QtWidgets.QMainWindow):
             crosshair=self._config["canvas"]["crosshair"],
         )
         self.canvas.zoomRequest.connect(self.zoomRequest)
+        self.canvas.mouseMoved.connect(
+            lambda pos: self.status(f"Mouse is at: x={pos.x()}, y={pos.y()}")
+        )
 
         scrollArea = QtWidgets.QScrollArea()
         scrollArea.setWidget(self.canvas)
@@ -182,7 +186,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas.shapeMoved.connect(self.setDirty)
         self.canvas.selectionChanged.connect(self.shapeSelectionChanged)
         self.canvas.drawingPolygon.connect(self.toggleDrawingSensitive)
-        self.canvas.rotateLabel.connect(self.rotateLabel)
 
         self.setCentralWidget(scrollArea)
 
@@ -288,19 +291,19 @@ class MainWindow(QtWidgets.QMainWindow):
         saveAuto.setChecked(self._config["auto_save"])
 
         saveWithImageData = action(
-            text="Save With Image Data",
+            text=self.tr("Save With Image Data"),
             slot=self.enableSaveImageWithData,
-            tip="Save image data in label file",
+            tip=self.tr("Save image data in label file"),
             checkable=True,
             checked=self._config["store_data"],
         )
 
         close = action(
-            "&Close",
+            self.tr("&Close"),
             self.closeFile,
             shortcuts["close"],
             "close",
-            "Close current file",
+            self.tr("Close current file"),
         )
 
         toggle_keep_prev_mode = action(
@@ -308,21 +311,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.toggleKeepPrevMode,
             shortcuts["toggle_keep_prev_mode"],
             None,
-            self.tr('Toggle "keep pevious annotation" mode'),
+            self.tr('Toggle "keep previous annotation" mode'),
             checkable=True,
         )
         toggle_keep_prev_mode.setChecked(self._config["keep_prev"])
 
-        toggle_omit_label_assign_mode = action(
-            self.tr("Omit Label Assignment"),
-            self.toggleOmitLabelAssignMode,
-            None,
-            None,
-            self.tr('Toggle "omit label assign" mode'),
-            checkable=True,
-        )
-        toggle_omit_label_assign_mode.setChecked(self._config["omit_label_assign"])
-        
         createMode = action(
             self.tr("Create Polygons"),
             lambda: self.toggleDrawMode(False, createMode="polygon"),
@@ -361,14 +354,6 @@ class MainWindow(QtWidgets.QMainWindow):
             shortcuts["create_point"],
             "objects",
             self.tr("Start drawing points"),
-            enabled=False,
-        )
-        createQuadMode = action(
-            self.tr("Create Quad"),
-            lambda: self.toggleDrawMode(False, createMode="quad"),
-            shortcuts["create_quad"],
-            "objects",
-            self.tr("Start drawing quads"),
             enabled=False,
         )
         createLineStripMode = action(
@@ -459,11 +444,11 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=False,
         )
         removePoint = action(
-            text="Remove Selected Point",
+            text=self.tr("Remove Selected Point"),
             slot=self.removeSelectedPoint,
             shortcut=shortcuts["remove_selected_point"],
             icon="edit",
-            tip="Remove selected point from polygon",
+            tip=self.tr("Remove selected point from polygon"),
             enabled=False,
         )
 
@@ -510,7 +495,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         zoom = QtWidgets.QWidgetAction(self)
         zoomBoxLayout = QtWidgets.QVBoxLayout()
-        zoomLabel = QtWidgets.QLabel("Zoom")
+        zoomLabel = QtWidgets.QLabel(self.tr("Zoom"))
         zoomLabel.setAlignment(Qt.AlignCenter)
         zoomBoxLayout.addWidget(zoomLabel)
         zoomBoxLayout.addWidget(self.zoomWidget)
@@ -582,11 +567,11 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=False,
         )
         brightnessContrast = action(
-            "&Brightness Contrast",
+            self.tr("&Brightness Contrast"),
             self.brightnessContrast,
             None,
             "color",
-            "Adjust brightness and contrast",
+            self.tr("Adjust brightness and contrast"),
             enabled=False,
         )
         # Group zoom controls into a list for easier toggling.
@@ -609,7 +594,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         edit = action(
             self.tr("&Edit Label"),
-            self.editLabel,
+            self._edit_label,
             shortcuts["edit_label"],
             "edit",
             self.tr("Modify the label of the selected polygon"),
@@ -628,7 +613,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._config["canvas"]["fill_drawing"]:
             fill_drawing.trigger()
 
-        # Lavel list context menu.
+        # Label list context menu.
         labelMenu = QtWidgets.QMenu()
         utils.addActions(labelMenu, (edit, delete))
         self.labelList.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -645,7 +630,6 @@ class MainWindow(QtWidgets.QMainWindow):
             close=close,
             deleteFile=deleteFile,
             toggleKeepPrevMode=toggle_keep_prev_mode,
-            toggleOmitLabelAssignMode=toggle_omit_label_assign_mode,
             delete=delete,
             edit=edit,
             duplicate=duplicate,
@@ -660,7 +644,6 @@ class MainWindow(QtWidgets.QMainWindow):
             createCircleMode=createCircleMode,
             createLineMode=createLineMode,
             createPointMode=createPointMode,
-            createQuadMode=createQuadMode,
             createLineStripMode=createLineStripMode,
             createAiPolygonMode=createAiPolygonMode,
             createAiMaskMode=createAiMaskMode,
@@ -691,7 +674,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 removePoint,
                 None,
                 toggle_keep_prev_mode,
-                toggle_omit_label_assign_mode,
             ),
             # menu shown at right click
             menu=(
@@ -700,7 +682,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 createCircleMode,
                 createLineMode,
                 createPointMode,
-                createQuadMode,
                 createLineStripMode,
                 createAiPolygonMode,
                 createAiMaskMode,
@@ -721,7 +702,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 createCircleMode,
                 createLineMode,
                 createPointMode,
-                createQuadMode,
                 createLineStripMode,
                 createAiPolygonMode,
                 createAiMaskMode,
@@ -950,7 +930,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.actions.createCircleMode,
             self.actions.createLineMode,
             self.actions.createPointMode,
-            self.actions.createQuadMode,
             self.actions.createLineStripMode,
             self.actions.createAiPolygonMode,
             self.actions.createAiMaskMode,
@@ -984,7 +963,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.createCircleMode.setEnabled(True)
         self.actions.createLineMode.setEnabled(True)
         self.actions.createPointMode.setEnabled(True)
-        self.actions.createQuadMode.setEnabled(True)
         self.actions.createLineStripMode.setEnabled(True)
         self.actions.createAiPolygonMode.setEnabled(True)
         self.actions.createAiMaskMode.setEnabled(True)
@@ -1042,7 +1020,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.undo.setEnabled(self.canvas.isShapeRestorable)
 
     def tutorial(self):
-        url = "https://github.com/wkentaro/labelme/tree/main/examples/tutorial"  # NOQA
+        url = "https://github.com/labelmeai/labelme/tree/main/examples/tutorial"  # NOQA
         webbrowser.open(url)
 
     def toggleDrawingSensitive(self, drawing=True):
@@ -1061,7 +1039,6 @@ class MainWindow(QtWidgets.QMainWindow):
             "rectangle": self.actions.createRectangleMode,
             "circle": self.actions.createCircleMode,
             "point": self.actions.createPointMode,
-            "quad": self.actions.createQuadMode,
             "line": self.actions.createLineMode,
             "linestrip": self.actions.createLineStripMode,
             "ai_polygon": self.actions.createAiPolygonMode,
@@ -1113,27 +1090,78 @@ class MainWindow(QtWidgets.QMainWindow):
                     return True
         return False
 
-    def editLabel(self, item=None):
-        if item and not isinstance(item, LabelListWidgetItem):
-            raise TypeError("item must be LabelListWidgetItem type")
-
+    def _edit_label(self, value=None):
         if not self.canvas.editing():
             return
-        if not item:
-            item = self.currentItem()
-        if item is None:
+
+        items = self.labelList.selectedItems()
+        if not items:
+            logger.warning("No label is selected, so cannot edit label.")
             return
-        shape = item.shape()
-        if shape is None:
-            return
+
+        shape = items[0].shape()
+
+        if len(items) == 1:
+            edit_text = True
+            edit_flags = True
+            edit_group_id = True
+            edit_description = True
+        else:
+            edit_text = all(item.shape().label == shape.label for item in items[1:])
+            edit_flags = all(item.shape().flags == shape.flags for item in items[1:])
+            edit_group_id = all(
+                item.shape().group_id == shape.group_id for item in items[1:]
+            )
+            edit_description = all(
+                item.shape().description == shape.description for item in items[1:]
+            )
+
+        if not edit_text:
+            self.labelDialog.edit.setDisabled(True)
+            self.labelDialog.labelList.setDisabled(True)
+        if not edit_flags:
+            for i in range(self.labelDialog.flagsLayout.count()):
+                self.labelDialog.flagsLayout.itemAt(i).setDisabled(True)
+        if not edit_group_id:
+            self.labelDialog.edit_group_id.setDisabled(True)
+        if not edit_description:
+            self.labelDialog.editDescription.setDisabled(True)
+
         text, flags, group_id, description = self.labelDialog.popUp(
-            text=shape.label,
-            flags=shape.flags,
-            group_id=shape.group_id,
-            description=shape.description,
+            text=shape.label if edit_text else "",
+            flags=shape.flags if edit_flags else None,
+            group_id=shape.group_id if edit_group_id else None,
+            description=shape.description if edit_description else None,
         )
+
+        if not edit_text:
+            self.labelDialog.edit.setDisabled(False)
+            self.labelDialog.labelList.setDisabled(False)
+        if not edit_flags:
+            for i in range(self.labelDialog.flagsLayout.count()):
+                self.labelDialog.flagsLayout.itemAt(i).setDisabled(False)
+        if not edit_group_id:
+            self.labelDialog.edit_group_id.setDisabled(False)
+        if not edit_description:
+            self.labelDialog.editDescription.setDisabled(False)
+
         if text is None:
+            assert flags is None
+            assert group_id is None
+            assert description is None
             return
+
+        self.canvas.storeShapes()
+        for item in items:
+            self._update_item(
+                item=item,
+                text=text if edit_text else None,
+                flags=flags if edit_flags else None,
+                group_id=group_id if edit_group_id else None,
+                description=description if edit_description else None,
+            )
+
+    def _update_item(self, item, text, flags, group_id, description):
         if not self.validateLabel(text):
             self.errorMessage(
                 self.tr("Invalid label"),
@@ -1142,10 +1170,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 ),
             )
             return
-        shape.label = text
-        shape.flags = flags
-        shape.group_id = group_id
-        shape.description = description
+
+        shape = item.shape()
+
+        if text is not None:
+            shape.label = text
+        if flags is not None:
+            shape.flags = flags
+        if group_id is not None:
+            shape.group_id = group_id
+        if description is not None:
+            shape.description = description
 
         self._update_shape_color(shape)
         if shape.group_id is None:
@@ -1202,7 +1237,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.delete.setEnabled(n_selected)
         self.actions.duplicate.setEnabled(n_selected)
         self.actions.copy.setEnabled(n_selected)
-        self.actions.edit.setEnabled(n_selected == 1)
+        self.actions.edit.setEnabled(n_selected)
 
     def addLabel(self, shape):
         if shape.group_id is None:
@@ -1330,7 +1365,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     description=s.description,
                     shape_type=s.shape_type,
                     flags=s.flags,
-                    mask=None if s.mask is None else utils.img_arr_to_b64(s.mask),
+                    mask=None
+                    if s.mask is None
+                    else utils.img_arr_to_b64(s.mask.astype(np.uint8)),
                 )
             )
             return data
@@ -1414,7 +1451,6 @@ class MainWindow(QtWidgets.QMainWindow):
         position MUST be in global coordinates.
         """
         items = self.uniqLabelList.selectedItems()
-        previous_shape = self.canvas.getPreviousShape()
         text = None
         if items:
             text = items[0].data(Qt.UserRole)
@@ -1422,16 +1458,10 @@ class MainWindow(QtWidgets.QMainWindow):
         group_id = None
         description = ""
         if self._config["display_label_popup"] or not text:
-            if self._config["omit_label_assign"] and previous_shape:
-                text = previous_shape.label
-                flags = previous_shape.flags
-                group_id = previous_shape.group_id
-                description = previous_shape.description
-            else:
-                previous_text = self.labelDialog.edit.text()
-                text, flags, group_id, description = self.labelDialog.popUp(text)
-                if not text:
-                    self.labelDialog.edit.setText(previous_text)
+            previous_text = self.labelDialog.edit.text()
+            text, flags, group_id, description = self.labelDialog.popUp(text)
+            if not text:
+                self.labelDialog.edit.setText(previous_text)
 
         if text and not self.validateLabel(text):
             self.errorMessage(
@@ -1454,28 +1484,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.canvas.undoLastLine()
             self.canvas.shapesBackups.pop()
-
-    def rotateLabel(self):
-        labels = self.uniqLabelList.getLabels()
-        if len(labels) > 1:
-            shape = self.canvas.hShape
-            item = self.labelList.findItemByShape(shape)
-            current_label = shape.label
-            current_index = labels.index(current_label)
-            next_index = (current_index + 1) % len(labels)
-            shape.label = labels[next_index]
-            self._update_shape_color(shape)
-            if shape.group_id is None:
-                item.setText(
-                    '{} <font color="#{:02x}{:02x}{:02x}">●</font>'.format(
-                        html.escape(shape.label), *shape.fill_color.getRgb()[:3]
-                    )
-                )
-            else:
-                item.setText("{} ({})".format(shape.label, shape.group_id))
-            self.actions.undoLastPoint.setEnabled(False)
-            self.actions.undo.setEnabled(True)
-            self.setDirty()
 
     def scrollRequest(self, delta, orientation):
         units = -delta * 0.1  # natural scroll
@@ -2022,9 +2030,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def toggleKeepPrevMode(self):
         self._config["keep_prev"] = not self._config["keep_prev"]
-
-    def toggleOmitLabelAssignMode(self):
-        self._config["omit_label_assign"] = not self._config["omit_label_assign"]
 
     def removeSelectedPoint(self):
         self.canvas.removeSelectedPoint()
