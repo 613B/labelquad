@@ -330,14 +330,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Start drawing lines"),
             enabled=False,
         )
-        createPointMode = action(
-            self.tr("Create Point"),
-            lambda: self.toggleDrawMode(False, createMode="point"),
-            shortcuts["create_point"],
-            "objects",
-            self.tr("Start drawing points"),
-            enabled=False,
-        )
         createLineStripMode = action(
             self.tr("Create LineStrip"),
             lambda: self.toggleDrawMode(False, createMode="linestrip"),
@@ -593,7 +585,6 @@ class MainWindow(QtWidgets.QMainWindow):
             createMode=createMode,
             editMode=editMode,
             createLineMode=createLineMode,
-            createPointMode=createPointMode,
             createLineStripMode=createLineStripMode,
             zoom=zoom,
             zoomIn=zoomIn,
@@ -627,7 +618,6 @@ class MainWindow(QtWidgets.QMainWindow):
             menu=(
                 createMode,
                 createLineMode,
-                createPointMode,
                 createLineStripMode,
                 editMode,
                 edit,
@@ -643,7 +633,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 close,
                 createMode,
                 createLineMode,
-                createPointMode,
                 createLineStripMode,
                 editMode,
                 brightnessContrast,
@@ -837,7 +826,6 @@ class MainWindow(QtWidgets.QMainWindow):
         actions = (
             self.actions.createMode,
             self.actions.createLineMode,
-            self.actions.createPointMode,
             self.actions.createLineStripMode,
             self.actions.editMode,
         )
@@ -866,7 +854,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.save.setEnabled(False)
         self.actions.createMode.setEnabled(True)
         self.actions.createLineMode.setEnabled(True)
-        self.actions.createPointMode.setEnabled(True)
         self.actions.createLineStripMode.setEnabled(True)
         title = __appname__
         if self.filename is not None:
@@ -938,7 +925,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggleDrawMode(self, edit=True, createMode="polygon"):
         draw_actions = {
             "polygon": self.actions.createMode,
-            "point": self.actions.createPointMode,
             "line": self.actions.createLineMode,
             "linestrip": self.actions.createLineStripMode,
         }
