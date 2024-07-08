@@ -19,7 +19,6 @@ from qtpy.QtCore import Qt
 from labelme import PY2
 from labelme import __appname__
 from labelme import utils
-from labelme.ai import MODELS
 from labelme.config import get_config
 from labelme.label_file import LabelFile
 from labelme.label_file import LabelFileError
@@ -34,7 +33,6 @@ from labelme.widgets import LabelListWidgetItem
 from labelme.widgets import ToolBar
 from labelme.widgets import UniqueLabelQListWidget
 from labelme.widgets import ZoomWidget
-
 
 # FIXME
 # - [medium] Set max zoom value to something big enough for FitWidth/Window
@@ -364,36 +362,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Start drawing linestrip. Ctrl+LeftClick ends creation."),
             enabled=False,
         )
-        createAiPolygonMode = action(
-            self.tr("Create AI-Polygon"),
-            lambda: self.toggleDrawMode(False, createMode="ai_polygon"),
-            None,
-            "objects",
-            self.tr("Start drawing ai_polygon. Ctrl+LeftClick ends creation."),
-            enabled=False,
-        )
-        createAiPolygonMode.changed.connect(
-            lambda: self.canvas.initializeAiModel(
-                name=self._selectAiModelComboBox.currentText()
-            )
-            if self.canvas.createMode == "ai_polygon"
-            else None
-        )
-        createAiMaskMode = action(
-            self.tr("Create AI-Mask"),
-            lambda: self.toggleDrawMode(False, createMode="ai_mask"),
-            None,
-            "objects",
-            self.tr("Start drawing ai_mask. Ctrl+LeftClick ends creation."),
-            enabled=False,
-        )
-        createAiMaskMode.changed.connect(
-            lambda: self.canvas.initializeAiModel(
-                name=self._selectAiModelComboBox.currentText()
-            )
-            if self.canvas.createMode == "ai_mask"
-            else None
-        )
         editMode = action(
             self.tr("Edit Polygons"),
             self.setEditMode,
@@ -645,8 +613,6 @@ class MainWindow(QtWidgets.QMainWindow):
             createLineMode=createLineMode,
             createPointMode=createPointMode,
             createLineStripMode=createLineStripMode,
-            createAiPolygonMode=createAiPolygonMode,
-            createAiMaskMode=createAiMaskMode,
             zoom=zoom,
             zoomIn=zoomIn,
             zoomOut=zoomOut,
@@ -683,8 +649,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 createLineMode,
                 createPointMode,
                 createLineStripMode,
-                createAiPolygonMode,
-                createAiMaskMode,
                 editMode,
                 edit,
                 duplicate,
@@ -703,8 +667,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 createLineMode,
                 createPointMode,
                 createLineStripMode,
-                createAiPolygonMode,
-                createAiMaskMode,
                 editMode,
                 brightnessContrast,
             ),
@@ -780,35 +742,6 @@ class MainWindow(QtWidgets.QMainWindow):
             ),
         )
 
-        selectAiModel = QtWidgets.QWidgetAction(self)
-        selectAiModel.setDefaultWidget(QtWidgets.QWidget())
-        selectAiModel.defaultWidget().setLayout(QtWidgets.QVBoxLayout())
-        #
-        selectAiModelLabel = QtWidgets.QLabel(self.tr("AI Model"))
-        selectAiModelLabel.setAlignment(QtCore.Qt.AlignCenter)
-        selectAiModel.defaultWidget().layout().addWidget(selectAiModelLabel)
-        #
-        self._selectAiModelComboBox = QtWidgets.QComboBox()
-        selectAiModel.defaultWidget().layout().addWidget(self._selectAiModelComboBox)
-        model_names = [model.name for model in MODELS]
-        self._selectAiModelComboBox.addItems(model_names)
-        if self._config["ai"]["default"] in model_names:
-            model_index = model_names.index(self._config["ai"]["default"])
-        else:
-            logger.warning(
-                "Default AI model is not found: %r",
-                self._config["ai"]["default"],
-            )
-            model_index = 0
-        self._selectAiModelComboBox.setCurrentIndex(model_index)
-        self._selectAiModelComboBox.currentIndexChanged.connect(
-            lambda: self.canvas.initializeAiModel(
-                name=self._selectAiModelComboBox.currentText()
-            )
-            if self.canvas.createMode in ["ai_polygon", "ai_mask"]
-            else None
-        )
-
         self.tools = self.toolbar("Tools")
         self.actions.tool = (
             open_,
@@ -828,7 +761,6 @@ class MainWindow(QtWidgets.QMainWindow):
             fitWindow,
             zoom,
             None,
-            selectAiModel,
         )
 
         self.statusBar().showMessage(str(self.tr("%s started.")) % __appname__)
@@ -931,8 +863,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.actions.createLineMode,
             self.actions.createPointMode,
             self.actions.createLineStripMode,
-            self.actions.createAiPolygonMode,
-            self.actions.createAiMaskMode,
             self.actions.editMode,
         )
         utils.addActions(self.menus.edit, actions + self.actions.editMenu)
@@ -964,8 +894,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions.createLineMode.setEnabled(True)
         self.actions.createPointMode.setEnabled(True)
         self.actions.createLineStripMode.setEnabled(True)
-        self.actions.createAiPolygonMode.setEnabled(True)
-        self.actions.createAiMaskMode.setEnabled(True)
         title = __appname__
         if self.filename is not None:
             title = "{} - {}".format(title, self.filename)
@@ -1041,8 +969,6 @@ class MainWindow(QtWidgets.QMainWindow):
             "point": self.actions.createPointMode,
             "line": self.actions.createLineMode,
             "linestrip": self.actions.createLineStripMode,
-            "ai_polygon": self.actions.createAiPolygonMode,
-            "ai_mask": self.actions.createAiMaskMode,
         }
 
         self.canvas.setEditing(edit)
