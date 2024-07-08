@@ -363,14 +363,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Undo last drawn point"),
             enabled=False,
         )
-        removePoint = action(
-            text=self.tr("Remove Selected Point"),
-            slot=self.removeSelectedPoint,
-            shortcut=shortcuts["remove_selected_point"],
-            icon="edit",
-            tip=self.tr("Remove selected point from polygon"),
-            enabled=False,
-        )
 
         undo = action(
             self.tr("Undo\n"),
@@ -556,7 +548,6 @@ class MainWindow(QtWidgets.QMainWindow):
             paste=paste,
             undoLastPoint=undoLastPoint,
             undo=undo,
-            removePoint=removePoint,
             createMode=createMode,
             editMode=editMode,
             zoom=zoom,
@@ -582,7 +573,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 undo,
                 undoLastPoint,
                 None,
-                removePoint,
                 None,
                 toggle_keep_prev_mode,
             ),
@@ -596,7 +586,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 delete,
                 undo,
                 undoLastPoint,
-                removePoint,
             ),
             onLoadActive=(
                 close,
@@ -606,8 +595,6 @@ class MainWindow(QtWidgets.QMainWindow):
             ),
             onShapesPresent=(saveAs, hideAll, showAll, toggleAll),
         )
-
-        self.canvas.vertexSelected.connect(self.actions.removePoint.setEnabled)
 
         self.menus = utils.struct(
             file=self.menu(self.tr("&File")),
@@ -1867,17 +1854,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def toggleKeepPrevMode(self):
         self._config["keep_prev"] = not self._config["keep_prev"]
-
-    def removeSelectedPoint(self):
-        self.canvas.removeSelectedPoint()
-        self.canvas.update()
-        if not self.canvas.hShape.points:
-            self.canvas.deleteShape(self.canvas.hShape)
-            self.remLabels([self.canvas.hShape])
-            if self.noShapes():
-                for action in self.actions.onShapesPresent:
-                    action.setEnabled(False)
-        self.setDirty()
 
     def deleteSelectedShape(self):
         yes, no = QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No
