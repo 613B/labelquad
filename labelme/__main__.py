@@ -6,12 +6,12 @@ import os.path as osp
 import sys
 
 import yaml
+from app import MainWindow
 from qtpy import QtCore
 from qtpy import QtWidgets
 
 from labelme import __appname__
 from labelme import __version__
-from labelme.app import MainWindow
 from labelme.config import get_config
 from labelme.logger import logger
 from labelme.utils import newIcon
