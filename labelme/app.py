@@ -250,15 +250,6 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=False,
         )
 
-        deleteFile = action(
-            self.tr("&Delete File"),
-            self.deleteFile,
-            shortcuts["delete_file"],
-            "delete",
-            self.tr("Delete current label file"),
-            enabled=False,
-        )
-
         changeOutputDir = action(
             self.tr("&Change Output Dir"),
             slot=self.changeOutputDirDialog,
@@ -529,7 +520,6 @@ class MainWindow(QtWidgets.QMainWindow):
             saveAs=saveAs,
             open=open_,
             close=close,
-            deleteFile=deleteFile,
             toggleKeepPrevMode=toggle_keep_prev_mode,
             delete=delete,
             edit=edit,
@@ -608,7 +598,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 changeOutputDir,
                 saveWithImageData,
                 close,
-                deleteFile,
                 None,
                 quit,
             ),
@@ -658,7 +647,6 @@ class MainWindow(QtWidgets.QMainWindow):
             openPrevImg,
             openNextImg,
             save,
-            deleteFile,
             None,
             createMode,
             editMode,
@@ -796,11 +784,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.filename is not None:
             title = "{} - {}".format(title, self.filename)
         self.setWindowTitle(title)
-
-        if self.hasLabelFile():
-            self.actions.deleteFile.setEnabled(True)
-        else:
-            self.actions.deleteFile.setEnabled(False)
 
     def toggleActions(self, value=True):
         """Enable/Disable widgets which depend on an opened image."""
@@ -1710,41 +1693,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return label_file
 
-    def deleteFile(self):
-        mb = QtWidgets.QMessageBox
-        msg = self.tr(
-            "You are about to permanently delete this label file, " "proceed anyway?"
-        )
-        answer = mb.warning(self, self.tr("Attention"), msg, mb.Yes | mb.No)
-        if answer != mb.Yes:
-            return
-
-        label_file = self.getLabelFile()
-        if osp.exists(label_file):
-            os.remove(label_file)
-            logger.info("Label file is removed: {}".format(label_file))
-
-            item = self.fileListWidget.currentItem()
-            item.setCheckState(Qt.Unchecked)
-
-            self.resetState()
-
-    # Message Dialogs. #
-    def hasLabels(self):
-        if self.noShapes():
-            self.errorMessage(
-                "No objects labeled",
-                "You must label at least one object to save the file.",
-            )
-            return False
-        return True
-
-    def hasLabelFile(self):
-        if self.filename is None:
-            return False
-
-        label_file = self.getLabelFile()
-        return osp.exists(label_file)
+    def setLabelFile(self, filename):
+        self.label_file = filename
 
     def mayContinue(self):
         if not self.dirty:
