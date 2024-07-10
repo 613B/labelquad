@@ -250,14 +250,6 @@ class MainWindow(QtWidgets.QMainWindow):
             enabled=False,
         )
 
-        changeOutputDir = action(
-            self.tr("&Change Output Dir"),
-            slot=self.changeOutputDirDialog,
-            shortcut=shortcuts["save_to"],
-            icon="open",
-            tip=self.tr("Change where annotations are loaded/saved"),
-        )
-
         saveAuto = action(
             text=self.tr("Save &Automatically"),
             slot=lambda x: self.actions.saveAuto.setChecked(x),
@@ -515,7 +507,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actions = utils.struct(
             saveAuto=saveAuto,
             saveWithImageData=saveWithImageData,
-            changeOutputDir=changeOutputDir,
             save=save,
             saveAs=saveAs,
             open=open_,
@@ -595,7 +586,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 save,
                 saveAs,
                 saveAuto,
-                changeOutputDir,
                 saveWithImageData,
                 close,
                 None,
@@ -1590,41 +1580,6 @@ class MainWindow(QtWidgets.QMainWindow):
             fileName = fileDialog.selectedFiles()[0]
             if fileName:
                 self.loadFile(fileName)
-
-    def changeOutputDirDialog(self, _value=False):
-        default_output_dir = self.output_dir
-        if default_output_dir is None and self.filename:
-            default_output_dir = osp.dirname(self.filename)
-        if default_output_dir is None:
-            default_output_dir = self.currentPath()
-
-        output_dir = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            self.tr("%s - Save/Load Annotations in Directory") % __appname__,
-            default_output_dir,
-            QtWidgets.QFileDialog.ShowDirsOnly
-            | QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
-        output_dir = str(output_dir)
-
-        if not output_dir:
-            return
-
-        self.output_dir = output_dir
-
-        self.statusBar().showMessage(
-            self.tr("%s . Annotations will be saved/loaded in %s")
-            % ("Change Annotations Dir", self.output_dir)
-        )
-        self.statusBar().show()
-
-        current_filename = self.filename
-        self.importDirImages(self.lastOpenDir, load=False)
-
-        if current_filename in self.imageList:
-            # retain currently selected file
-            self.fileListWidget.setCurrentRow(self.imageList.index(current_filename))
-            self.fileListWidget.repaint()
 
     def saveFile(self, _value=False):
         assert not self.image.isNull(), "cannot save empty image"
