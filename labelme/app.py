@@ -1529,25 +1529,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # ask the use for where to save the labels
         # self.settings.setValue('window/geometry', self.saveGeometry())
 
-    def dragEnterEvent(self, event):
-        extensions = [
-            ".%s" % fmt.data().decode().lower()
-            for fmt in QtGui.QImageReader.supportedImageFormats()
-        ]
-        if event.mimeData().hasUrls():
-            items = [i.toLocalFile() for i in event.mimeData().urls()]
-            if any([i.lower().endswith(tuple(extensions)) for i in items]):
-                event.accept()
-        else:
-            event.ignore()
-
-    def dropEvent(self, event):
-        if not self.mayContinue():
-            event.ignore()
-            return
-        items = [i.toLocalFile() for i in event.mimeData().urls()]
-        self.importDroppedImageFiles(items)
-
     # User Dialogs #
 
     def loadRecent(self, filename):
@@ -1849,34 +1830,6 @@ class MainWindow(QtWidgets.QMainWindow):
             item = self.fileListWidget.item(i)
             lst.append(item.text())
         return lst
-
-    def importDroppedImageFiles(self, imageFiles):
-        extensions = [
-            ".%s" % fmt.data().decode().lower()
-            for fmt in QtGui.QImageReader.supportedImageFormats()
-        ]
-
-        self.filename = None
-        for file in imageFiles:
-            if file in self.imageList or not file.lower().endswith(tuple(extensions)):
-                continue
-            label_file = osp.splitext(file)[0] + ".json"
-            if self.output_dir:
-                label_file_without_path = osp.basename(label_file)
-                label_file = osp.join(self.output_dir, label_file_without_path)
-            item = QtWidgets.QListWidgetItem(file)
-            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-            if QtCore.QFile.exists(label_file) and LabelFile.is_label_file(label_file):
-                item.setCheckState(Qt.Checked)
-            else:
-                item.setCheckState(Qt.Unchecked)
-            self.fileListWidget.addItem(item)
-
-        if len(self.imageList) > 1:
-            self.actions.openNextImg.setEnabled(True)
-            self.actions.openPrevImg.setEnabled(True)
-
-        self.openNextImg()
 
     def importDirImages(self, dirpath, pattern=None, load=True):
         self.actions.openNextImg.setEnabled(True)
