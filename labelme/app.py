@@ -241,14 +241,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tr("Save labels to file"),
             enabled=False,
         )
-        saveAs = action(
-            self.tr("&Save As"),
-            self.saveFileAs,
-            shortcuts["save_as"],
-            "save-as",
-            self.tr("Save labels to a different file"),
-            enabled=False,
-        )
 
         saveAuto = action(
             text=self.tr("Save &Automatically"),
@@ -508,7 +500,6 @@ class MainWindow(QtWidgets.QMainWindow):
             saveAuto=saveAuto,
             saveWithImageData=saveWithImageData,
             save=save,
-            saveAs=saveAs,
             open=open_,
             close=close,
             toggleKeepPrevMode=toggle_keep_prev_mode,
@@ -531,7 +522,7 @@ class MainWindow(QtWidgets.QMainWindow):
             zoomActions=zoomActions,
             openNextImg=openNextImg,
             openPrevImg=openPrevImg,
-            fileMenuActions=(open_, opendir, save, saveAs, close, quit),
+            fileMenuActions=(open_, opendir, save, close, quit),
             tool=(),
             # XXX: need to add some actions here to activate the shortcut
             editMenu=(
@@ -563,7 +554,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 editMode,
                 brightnessContrast,
             ),
-            onShapesPresent=(saveAs, hideAll, showAll, toggleAll),
+            onShapesPresent=(hideAll, showAll, toggleAll),
         )
 
         self.menus = utils.struct(
@@ -584,7 +575,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 opendir,
                 self.menus.recentFiles,
                 save,
-                saveAs,
                 saveAuto,
                 saveWithImageData,
                 close,
