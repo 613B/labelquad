@@ -16,7 +16,7 @@ from qtpy import QtGui
 from qtpy import QtWidgets
 from qtpy.QtCore import Qt
 from widgets.add_quad_dialog import AddQuadDialog
-from widgets.quad_list_widget import QuadListWidget
+from widgets.canvas import Canvas
 
 from labelme import PY2
 from labelme import __appname__
@@ -27,7 +27,6 @@ from labelme.label_file import LabelFileError
 from labelme.logger import logger
 from labelme.shape import Shape
 from labelme.widgets import BrightnessContrastDialog
-from labelme.widgets import Canvas
 from labelme.widgets import FileDialogPreview
 from labelme.widgets import LabelListWidget
 from labelme.widgets import LabelListWidgetItem
