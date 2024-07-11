@@ -15,6 +15,8 @@ from qtpy import QtCore
 from qtpy import QtGui
 from qtpy import QtWidgets
 from qtpy.QtCore import Qt
+from widgets.add_quad_dialog import AddQuadDialog
+from widgets.quad_list_widget import QuadListWidget
 
 from labelme import PY2
 from labelme import __appname__
@@ -27,7 +29,6 @@ from labelme.shape import Shape
 from labelme.widgets import BrightnessContrastDialog
 from labelme.widgets import Canvas
 from labelme.widgets import FileDialogPreview
-from labelme.widgets import LabelDialog
 from labelme.widgets import LabelListWidget
 from labelme.widgets import LabelListWidgetItem
 from labelme.widgets import ToolBar
@@ -95,15 +96,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._copied_shapes = None
 
         # Main widgets and related state.
-        self.labelDialog = LabelDialog(
+        self.add_quad_dialog = AddQuadDialog(
             parent=self,
-            labels=self._config["labels"],
-            sort_labels=self._config["sort_labels"],
-            show_text_field=self._config["show_label_text_field"],
             completion=self._config["label_completion"],
-            fit_to_content=self._config["fit_to_content"],
         )
 
+        self.quadList = QuadListWidget()
+        self.quadList.itemSelectionChanged.connect(self.labelSelectionChanged)
+        self.quadList.itemDoubleClicked.connect(self._edit_label)
+        self.quadList.itemChanged.connect(self.labelItemChanged)
+        self.quadList.itemDropped.connect(self.labelOrderChanged)
+        self.quad_dock = QtWidgets.QDockWidget(self.tr("Quads"), self)
+        self.quad_dock.setObjectName("Quads")
+        self.quad_dock.setWidget(self.quadList)
+
+        self.label_file = None
         self.labelList = LabelListWidget()
         self.lastOpenDir = None
 
@@ -189,6 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._config[dock]["show"] is False:
                 getattr(self, dock).setVisible(False)
 
+        self.addDockWidget(Qt.RightDockWidgetArea, self.quad_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.label_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.shape_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.file_dock)
@@ -576,6 +584,7 @@ class MainWindow(QtWidgets.QMainWindow):
         utils.addActions(
             self.menus.view,
             (
+                self.quad_dock.toggleViewAction(),
                 self.label_dock.toggleViewAction(),
                 self.shape_dock.toggleViewAction(),
                 self.file_dock.toggleViewAction(),
@@ -886,48 +895,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 item.shape().description == shape.description for item in items[1:]
             )
 
-        if not edit_text:
-            self.labelDialog.edit.setDisabled(True)
-            self.labelDialog.labelList.setDisabled(True)
-        if not edit_group_id:
-            self.labelDialog.edit_group_id.setDisabled(True)
-        if not edit_description:
-            self.labelDialog.editDescription.setDisabled(True)
-
-        text, _, group_id, description = self.labelDialog.popUp(
-            text=shape.label if edit_text else "",
-            flags=None,
-            group_id=shape.group_id if edit_group_id else None,
-            description=shape.description if edit_description else None,
-        )
-
-        if not edit_text:
-            self.labelDialog.edit.setDisabled(False)
-            self.labelDialog.labelList.setDisabled(False)
-        if not edit_group_id:
-            self.labelDialog.edit_group_id.setDisabled(False)
-        if not edit_description:
-            self.labelDialog.editDescription.setDisabled(False)
+        text, _, _, _ = self.add_quad_dialog.popUp(
+            text=shape.label if edit_text else "")
 
         if text is None:
-            assert group_id is None
-            assert description is None
             return
 
         self.canvas.storeShapes()
         for item in items:
             self._update_item(
                 item=item,
-                text=text if edit_text else None,
-                group_id=group_id if edit_group_id else None,
-                description=description if edit_description else None,
+                text=text if edit_text else None
             )
 
-    def _update_item(self, item, text, group_id, description):
+    def _update_item(self, item, text):
         if not self.validateLabel(text):
             self.errorMessage(
-                self.tr("Invalid label"),
-                self.tr("Invalid label '{}' with validation type '{}'").format(
+                self.tr("Invalid ID"),
+                self.tr("Invalid ID '{}' with validation type '{}'").format(
                     text, self._config["validate_label"]
                 ),
             )
@@ -937,10 +922,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if text is not None:
             shape.label = text
-        if group_id is not None:
-            shape.group_id = group_id
-        if description is not None:
-            shape.description = description
 
         self._update_shape_color(shape)
         if shape.group_id is None:
@@ -978,7 +959,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if currIndex < len(self.imageList):
             filename = self.imageList[currIndex]
             if filename:
-                self.loadFile(filename)
+                self.loadImg(filename)
 
     # React to canvas signals.
     def shapeSelectionChanged(self, selected_shapes):
@@ -1010,7 +991,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.uniqLabelList.addItem(item)
             rgb = self._get_rgb_by_label(shape.label)
             self.uniqLabelList.setItemLabel(item, shape.label, rgb)
-        self.labelDialog.addLabelHistory(shape.label)
         for action in self.actions.onShapesPresent:
             action.setEnabled(True)
 
@@ -1186,10 +1166,10 @@ class MainWindow(QtWidgets.QMainWindow):
         group_id = None
         description = ""
         if self._config["display_label_popup"] or not text:
-            previous_text = self.labelDialog.edit.text()
-            text, _, group_id, description = self.labelDialog.popUp(text)
+            previous_text = self.add_quad_dialog.edit.text()
+            text, _, _, _ = self.add_quad_dialog.popUp(text)
             if not text:
-                self.labelDialog.edit.setText(previous_text)
+                self.add_quad_dialog.edit.setText(previous_text)
 
         if text and not self.validateLabel(text):
             self.errorMessage(
