@@ -1086,7 +1086,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 mask=shape["mask"],
             )
             for x, y in points:
-                shape.addPoint(QtCore.QPointF(x, y))
+                shape.addPoint(QtCore.QPoint(int(x), int(y)))
             shape.close()
 
             shape.other_data = other_data
@@ -1102,7 +1102,7 @@ class MainWindow(QtWidgets.QMainWindow):
             data.update(
                 dict(
                     label=s.label.encode("utf-8") if PY2 else s.label,
-                    points=[(p.x(), p.y()) for p in s.points],
+                    points=[(int(p.x()), int(p.y())) for p in s.points],
                     group_id=s.group_id,
                     description=s.description,
                     shape_type=s.shape_type,
