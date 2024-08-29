@@ -7,7 +7,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/labelme",
       "console": "integratedTerminal",
-      "args": [
+      "args": ["--labels", "${workspaceFolder}/labelme/labels.txt"
       ]
     }
   ]
